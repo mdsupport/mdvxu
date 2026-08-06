@@ -242,6 +242,7 @@ foreach ($rsVxu as $vxu) {
     $objPID->setField(8, $sex);
        
     // Race
+    $race = null;
     if (!empty($patient['race'])) {
         $rsPtRace = $objDB->execSql([
             'sql' => 'select title,notes from list_options where list_id = ? and option_id = ?',
@@ -265,8 +266,10 @@ foreach ($rsVxu as $vxu) {
     switch ($patient['ethnicity']) {
         case "hisp_or_latin":
             $objPID->setEthnicGroup('2135-2^Hispanic or Latino^CDCREC');
+            break;
         case "not_hisp_or_latin":
             $objPID->setEthnicGroup("2186-5^Not Hispanic or Latino^CDCREC");
+            break;
         default: // Unknown
             $objPID->setEthnicGroup("PHC1175^Prefer Not to Say^CDCREC");
     }
@@ -378,13 +381,14 @@ foreach ($rsVxu as $vxu) {
     
 //    print($hl7);
     
+    $cairResponseVXU = null;
     try{
         $cairResponseVXU = $cairSOAP->submitSingleMessage($hl7);
     }catch(Exception $e){
         syslog(LOG_ERR, 'Unable to submit VXU to IR: ' . $e->getMessage());
     }
     
-    if (property_exists($cairResponseVXU, 'return')) {
+    if (is_object($cairResponseVXU) && property_exists($cairResponseVXU, 'return')) {
         $ackCAIR = new Message($cairResponseVXU->return);
         $ackMSA = $ackCAIR->getFirstSegmentInstance('MSA');
         $ackCode = $ackMSA->getField(1);
